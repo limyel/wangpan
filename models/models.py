@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Float
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 
@@ -75,7 +75,7 @@ class SubfilePath(ModelBase):
     path = Column(String(512))
 
     user_id = Column(Integer, ForeignKey("User.id"))
-    subfile_md5_id = Column(Integer, ForeignKey("SubfileMd5.id"))
+    subfile_id = Column(Integer, ForeignKey("Subfile.id"))
 
 
 if __name__ == '__main__':
