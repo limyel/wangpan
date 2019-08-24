@@ -40,6 +40,7 @@ class FileMd5(ModelBase):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     md5 = Column(String(64))
+    nums = Column(Integer)
 
     subfile_md5 = relationship("SubfileMd5")
     file = relationship("File")
@@ -51,19 +52,10 @@ class Subfile(ModelBase):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     size = Column(Float)
+    md5 = Column(String(64))
+    num = Column(Integer)
 
     subfile_path = relationship("SubfilePath")
-    subfile_md5_id = Column(Integer, ForeignKey("SubfileMd5.id"))
-
-
-class SubfileMd5(ModelBase):
-
-    __tablename__ = "SubfileMd5"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    md5 = Column(String(64))
-
-    subfile = relationship("Subfile")
     file_md5_id = Column(Integer, ForeignKey("FileMd5.id"))
 
 
