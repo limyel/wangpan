@@ -1,4 +1,4 @@
-from models.Seeion import GetSession
+from models.seeion import GetSession
 from models.models import User
 
 
