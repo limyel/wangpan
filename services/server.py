@@ -4,14 +4,16 @@ from threading import Thread
 
 from models.models import User
 from utils import b64, md5, proto, supplement
+from models.seeion import GetSession
 
 
-SIZE = 1455
+SIZE = 1486
 
 
 class Server:
     def __init__(self):
         print("start")
+        self.recv_size = 0
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(('192.168.31.203', 52578))
@@ -27,17 +29,30 @@ class Server:
 
     def recv(self, client, sockname):
         while True:
-            data = client.recv(SIZE)
+            data = self.recvall(client)
+            print(len(data))
             data = proto.unmakeProto(data)
-            print(data)
+            type = data['type']
 
-            if not data['type']:
-                client.close()
-                return
-            if data['type'] == 'uploadsubfile':
+            if type == 'uploadfile':
+                data = proto.makeProto('uploadfile', data['md5'], data['filemd5'], -1, '')
+                client.sendall(data)
+                print('ok')
+            if type == 'uploadsubfile':
+                with GetSession() as session:
+                    session.add
                 f = open('../subfiles/{}.txt'.format(data['md5']), 'w')
                 f.write(data['content'])
                 f.close()
+
+    def recvall(self, client):
+        size = 0
+        data = client.recv(SIZE)
+        while True:
+            if len(data) != SIZE:
+                data = data + client.recv(SIZE - len(data))
+            else:
+                return data
 
     def test(self):
         pass
