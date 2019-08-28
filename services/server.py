@@ -3,7 +3,7 @@ import time
 from threading import Thread
 import json
 
-from models.models import User
+from models.models import *
 from utils import b64, md5, proto, supplement
 from models.seeion import GetSession
 
@@ -32,6 +32,7 @@ class Server:
         user = None
         while True:
             data = self.recvall(client)
+            print(data)
             print(len(data))
             data = proto.unmakeProto(data)
             type = data['type']
@@ -40,14 +41,21 @@ class Server:
                 info = info.strip()
                 info = json.loads(info)
                 with GetSession() as session:
-                    nonlocal user
-                    user = session.query(User).filter(username=info['username'], password=info['password'])
+                    user = session.query(User).filter_by(username=info['username'], password=info['password']).one()
                     if not user:
                         pass
             if type == 'uploadfile':
-                data = proto.makeProto('uploadfile', data['md5'], data['filemd5'], -1, '')
+                # 将文件信息存入数据库，返回确认信息
+                info = json.loads(data['content'].strip())
+                with GetSession() as session:
+                    file_md5 = FileMd5(id=data['filemd5'], nums=int(data['no']))
+                    session.add(file_md5)
+                    session.commit()
+                    file = File(filename=info['filename'], size=int(info['filesize']), file_md5_id=file_md5.id, user_id=user.id)
+                    session.add(file)
+                    session.commit()
+                data = proto.makeProto('uploadfile', data['md5'], data['filemd5'], int(data['no']), '')
                 client.sendall(data)
-                print('ok')
             if type == 'uploadsubfile':
                 with GetSession() as session:
                     pass

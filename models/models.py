@@ -31,18 +31,17 @@ class File(ModelBase):
     size = Column(Float)
 
     user_id = Column(Integer, ForeignKey("User.id"))
-    file_md5_id = Column(Integer, ForeignKey("FileMd5.id"))
+    file_md5_id = Column(String(64), ForeignKey("FileMd5.id"))
 
 
 class FileMd5(ModelBase):
 
     __tablename__ = "FileMd5"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    md5 = Column(String(64))
+    id = Column(String(64), primary_key=True)
     nums = Column(Integer)
 
-    subfile_md5 = relationship("SubfileMd5")
+    subfile = relationship("Subfile")
     file = relationship("File")
 
 
@@ -50,13 +49,12 @@ class Subfile(ModelBase):
 
     __tablename__ = "Subfile"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(String(64), primary_key=True)
     size = Column(Float)
-    md5 = Column(String(64))
     num = Column(Integer)
 
     subfile_path = relationship("SubfilePath")
-    file_md5_id = Column(Integer, ForeignKey("FileMd5.id"))
+    file_md5_id = Column(String(64), ForeignKey("FileMd5.id"))
 
 
 class SubfilePath(ModelBase):
@@ -67,7 +65,7 @@ class SubfilePath(ModelBase):
     path = Column(String(512))
 
     user_id = Column(Integer, ForeignKey("User.id"))
-    subfile_id = Column(Integer, ForeignKey("Subfile.id"))
+    subfile_id = Column(String(64), ForeignKey("Subfile.id"))
 
 
 if __name__ == '__main__':
