@@ -15,8 +15,8 @@ class User(ModelBase):
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(256))
     password = Column(String(256))
-    ip = Column(String(15))
-    port = Column(Integer)
+    # ip = Column(String(15))
+    # port = Column(Integer)
 
     subfile_path = relationship("SubfilePath")
     file = relationship("File")

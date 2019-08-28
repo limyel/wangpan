@@ -1,6 +1,7 @@
 import socket
 import time
 from threading import Thread
+import json
 
 from models.models import User
 from utils import b64, md5, proto, supplement
@@ -28,24 +29,34 @@ class Server:
             th.start()
 
     def recv(self, client, sockname):
+        user = None
         while True:
             data = self.recvall(client)
             print(len(data))
             data = proto.unmakeProto(data)
             type = data['type']
-
+            if type == 'login':
+                info = data['content']
+                info = info.strip()
+                info = json.loads(info)
+                with GetSession() as session:
+                    nonlocal user
+                    user = session.query(User).filter(username=info['username'], password=info['password'])
+                    if not user:
+                        pass
             if type == 'uploadfile':
                 data = proto.makeProto('uploadfile', data['md5'], data['filemd5'], -1, '')
                 client.sendall(data)
                 print('ok')
             if type == 'uploadsubfile':
                 with GetSession() as session:
-                    session.add
+                    pass
                 f = open('../subfiles/{}.txt'.format(data['md5']), 'w')
                 f.write(data['content'])
                 f.close()
 
     def recvall(self, client):
+        # 一次接收 SIZE 个字节，如果不够则继续接收
         size = 0
         data = client.recv(SIZE)
         while True:
