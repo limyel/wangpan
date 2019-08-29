@@ -14,26 +14,29 @@ SIZE = 1486
 class Server:
     def __init__(self):
         print("start")
+        self.users = []
+        self.user_index = 0
         self.recv_size = 0
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(('192.168.31.203', 52578))
         self.sock.listen(20)
-        self.users = []
+        self.askTh = Thread(target=self.askAlive)
+        self.askTh.setDaemon(True)
+        self.askTh.start()
+
         while True:
             client, sockname = self.sock.accept()
             print("{}, {}".format(time.strftime("%Y-%m-%d %H:%M:%S"), sockname))
-            self.users.append((client, sockname))
-            th = Thread(target=self.recv, args=(client, sockname))
+            th = Thread(target=self.recv, args=(client, ))
             th.setDaemon(True)
             th.start()
 
-    def recv(self, client, sockname):
+    def recv(self, client):
         user = None
         while True:
             data = self.recvall(client)
             print(data)
-            print(len(data))
             data = proto.unmakeProto(data)
             type = data['type']
             if type == 'login':
@@ -44,6 +47,8 @@ class Server:
                     user = session.query(User).filter_by(username=info['username'], password=info['password']).one()
                     if not user:
                         pass
+                    # 将登录的用户添加到用户列表中
+                    self.users.append({'user': user, 'client': client})
             if type == 'uploadfile':
                 # 将文件信息存入数据库，返回确认信息
                 info = json.loads(data['content'].strip())
@@ -58,20 +63,38 @@ class Server:
                 client.sendall(data)
             if type == 'uploadsubfile':
                 with GetSession() as session:
+                    subfile = Subfile(id=data['md5'], file_md5_id=data['filemd5'], num=int(data['no']))
+                    session.add(subfile)
+                    session.commit()
+                for user in self.users:
                     pass
+
                 f = open('../subfiles/{}.txt'.format(data['md5']), 'w')
                 f.write(data['content'])
                 f.close()
 
     def recvall(self, client):
         # 一次接收 SIZE 个字节，如果不够则继续接收
-        size = 0
         data = client.recv(SIZE)
         while True:
             if len(data) != SIZE:
-                data = data + client.recv(SIZE - len(data))
+                try:
+                    data = data + client.recv(SIZE - len(data))
+                except Exception as e:
+                    client.close()
             else:
                 return data
+
+    def askAlive(self):
+        while True:
+            for user in self.users:
+                try:
+                    user['client'].send(b'ok')
+                except Exception as e:
+                    user['client'].close()
+                    self.users.remove(user)
+            time.sleep(10)
+            print(self.users)
 
     def test(self):
         pass

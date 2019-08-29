@@ -50,7 +50,6 @@ class Subfile(ModelBase):
     __tablename__ = "Subfile"
 
     id = Column(String(64), primary_key=True)
-    size = Column(Float)
     num = Column(Integer)
 
     subfile_path = relationship("SubfilePath")
