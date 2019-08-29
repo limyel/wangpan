@@ -14,6 +14,8 @@ SIZE = 1486
 class Server:
     def __init__(self):
         print("start")
+        # 备份次数
+        self.times = 0
         self.users = []
         self.user_index = 0
         self.recv_size = 0
@@ -21,9 +23,9 @@ class Server:
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(('192.168.31.203', 52578))
         self.sock.listen(20)
-        self.askTh = Thread(target=self.askAlive)
-        self.askTh.setDaemon(True)
-        self.askTh.start()
+        # self.askTh = Thread(target=self.askAlive)
+        # self.askTh.setDaemon(True)
+        # self.askTh.start()
 
         while True:
             client, sockname = self.sock.accept()
@@ -36,7 +38,7 @@ class Server:
         user = None
         while True:
             data = self.recvall(client)
-            print(data)
+            send_data = data
             data = proto.unmakeProto(data)
             type = data['type']
             if type == 'login':
@@ -59,19 +61,27 @@ class Server:
                     file = File(filename=info['filename'], size=int(info['filesize']), file_md5_id=file_md5.id, user_id=user.id)
                     session.add(file)
                     session.commit()
-                data = proto.makeProto('uploadfile', data['md5'], data['filemd5'], int(data['no']), '')
-                client.sendall(data)
+                send_data = proto.makeProto('uploadfile', data['md5'], data['filemd5'], int(data['no']), '')
+                client.sendall(send_data)
             if type == 'uploadsubfile':
                 with GetSession() as session:
                     subfile = Subfile(id=data['md5'], file_md5_id=data['filemd5'], num=int(data['no']))
                     session.add(subfile)
                     session.commit()
-                for user in self.users:
-                    pass
-
-                f = open('../subfiles/{}.txt'.format(data['md5']), 'w')
-                f.write(data['content'])
-                f.close()
+                if self.user_index == len(self.users):
+                    self.user_index = 0
+                # send_user 注意与上面的 user 相区别
+                send_user = self.users[self.user_index]
+                try:
+                    send_user['client'].sendall(send_data)
+                except Exception as e:
+                    self.users.remove(send_user)
+                    continue
+                else:
+                    self.times += 1
+                with GetSession() as session:
+                    subfile_path = SubfilePath()
+                self.user_index += 1
 
     def recvall(self, client):
         # 一次接收 SIZE 个字节，如果不够则继续接收

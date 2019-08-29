@@ -61,7 +61,6 @@ class SubfilePath(ModelBase):
     __tablename__ = "SubfilePath"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    path = Column(String(512))
 
     user_id = Column(Integer, ForeignKey("User.id"))
     subfile_id = Column(String(64), ForeignKey("Subfile.id"))
