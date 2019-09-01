@@ -51,7 +51,7 @@ class Server:
                         pass
                     # 将登录的用户添加到用户列表中
                     self.users.append({'user': user, 'client': client})
-            if type == 'uploadfile':
+            elif type == 'uploadfile':
                 # 将文件信息存入数据库，返回确认信息
                 info = json.loads(data['content'].strip())
                 with GetSession() as session:
@@ -63,25 +63,37 @@ class Server:
                     session.commit()
                 send_data = proto.makeProto('uploadfile', data['md5'], data['filemd5'], int(data['no']), '')
                 client.sendall(send_data)
-            if type == 'uploadsubfile':
+            elif type == 'uploadsubfile':
                 with GetSession() as session:
                     subfile = Subfile(id=data['md5'], file_md5_id=data['filemd5'], num=int(data['no']))
                     session.add(subfile)
                     session.commit()
-                if self.user_index == len(self.users):
-                    self.user_index = 0
-                # send_user 注意与上面的 user 相区别
-                send_user = self.users[self.user_index]
-                try:
-                    send_user['client'].sendall(send_data)
-                except Exception as e:
-                    self.users.remove(send_user)
-                    continue
-                else:
-                    self.times += 1
-                with GetSession() as session:
-                    subfile_path = SubfilePath()
-                self.user_index += 1
+                while self.times <= 2:
+                    if self.user_index == len(self.users):
+                        self.user_index = 0
+                    # send_user 注意与上面的 user 相区别
+                    send_user = self.users[self.user_index]
+                    try:
+                        send_user['client'].sendall(send_data)
+                    except Exception as e:
+                        self.users.remove(send_user)
+                        continue
+                    else:
+                        self.times += 1
+                    with GetSession() as session:
+                        subfile_path = SubfilePath(user_id=send_user.id, subfile_id=subfile.id)
+                        session.add(subfile_path)
+                        session.commit()
+                    self.user_index += 1
+                self.times = 0
+            elif type == 'downloadfile':
+                pass
+            elif type == 'downloadsubfile':
+                pass
+            elif type == 'delfile':
+                pass
+            elif type == 'delsubfile':
+                pass
 
     def recvall(self, client):
         # 一次接收 SIZE 个字节，如果不够则继续接收
