@@ -16,12 +16,15 @@ class Server:
         print("start")
         # 备份次数
         self.times = 0
+        # 请求的下载文件
+        self.downloadfiles = {}
+        # 在线用户 {'user': user, 'client': client}
         self.users = []
         self.user_index = 0
         self.recv_size = 0
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind(('192.168.31.203', 52578))
+        self.sock.bind(('10.24.77.193', 52578))
         self.sock.listen(20)
         # self.askTh = Thread(target=self.askAlive)
         # self.askTh.setDaemon(True)
@@ -64,15 +67,16 @@ class Server:
                 send_data = proto.makeProto('uploadfile', data['md5'], data['filemd5'], int(data['no']), '')
                 client.sendall(send_data)
             elif type == 'uploadsubfile':
-                with GetSession() as session:
-                    subfile = Subfile(id=data['md5'], file_md5_id=data['filemd5'], num=int(data['no']))
-                    session.add(subfile)
-                    session.commit()
+                # with GetSession() as session:
+                #     subfile = Subfile(id=data['md5'], file_md5_id=data['filemd5'], num=int(data['no']))
+                #     session.add(subfile)
+                #     session.commit()
                 while self.times <= 2:
                     if self.user_index == len(self.users):
                         self.user_index = 0
                     # send_user 注意与上面的 user 相区别
                     send_user = self.users[self.user_index]
+                    print(self.users)
                     try:
                         send_user['client'].sendall(send_data)
                     except Exception as e:
@@ -81,13 +85,21 @@ class Server:
                     else:
                         self.times += 1
                     with GetSession() as session:
-                        subfile_path = SubfilePath(user_id=send_user.id, subfile_id=subfile.id)
-                        session.add(subfile_path)
+                        subfile = Subfile(id=data['md5'], file_md5_id=data['filemd5'], num=int(data['no']), user_id=send_user['user'].id)
+                        session.add(subfile)
                         session.commit()
+                        # subfile = session.query(Subfile).filter_by(id=data['md5']).one()
+                        # subfile_path = SubfilePath(user_id=send_user['user'].id, subfile_id=subfile.id)
+                        # session.add(subfile_path)
+                        # session.commit()
                     self.user_index += 1
                 self.times = 0
             elif type == 'downloadfile':
-                pass
+                print(data)
+                with GetSession() as session:
+                    file = session.query(FileMd5).filter_by(id=data['md5'])
+                    print(file.subfile)
+
             elif type == 'downloadsubfile':
                 pass
             elif type == 'delfile':

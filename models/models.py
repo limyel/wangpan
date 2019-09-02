@@ -18,7 +18,7 @@ class User(ModelBase):
     # ip = Column(String(15))
     # port = Column(Integer)
 
-    subfile_path = relationship("SubfilePath")
+    subfile = relationship("Subfile")
     file = relationship("File")
 
 
@@ -49,21 +49,22 @@ class Subfile(ModelBase):
 
     __tablename__ = "Subfile"
 
-    id = Column(String(64), primary_key=True)
+    id = Column(Integer, autoincrement=True)
+    md5 = Column(String(64), primary_key=True)
     num = Column(Integer)
 
-    subfile_path = relationship("SubfilePath")
     file_md5_id = Column(String(64), ForeignKey("FileMd5.id"))
-
-
-class SubfilePath(ModelBase):
-
-    __tablename__ = "SubfilePath"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-
     user_id = Column(Integer, ForeignKey("User.id"))
-    subfile_id = Column(String(64), ForeignKey("Subfile.id"))
+
+
+# class SubfilePath(ModelBase):
+#
+#     __tablename__ = "SubfilePath"
+#
+#     id = Column(Integer, primary_key=True, autoincrement=True)
+#
+#     user_id = Column(Integer, ForeignKey("User.id"))
+#     subfile_id = Column(String(64), ForeignKey("Subfile.id"))
 
 
 if __name__ == '__main__':
